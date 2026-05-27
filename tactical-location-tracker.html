@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TACTICAL LOCATION SYSTEM — UNIT TRACKER v4.2</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --amber: #ffb000;
+    --amber-dim: #c88000;
+    --amber-glow: rgba(255,176,0,0.18);
+    --amber-faint: rgba(255,176,0,0.07);
+    --bg: #090a06;
+    --bg2: #0d0f09;
+    --bg3: #12140d;
+    --red: #ff3c2a;
+    --green: #39ff14;
+    --panel: rgba(255,176,0,0.04);
+    --border: rgba(255,176,0,0.22);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--amber);
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.72) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  .main-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 12px 30px;
+    gap: 16px;
+  }
+
+  /* ── TOP HEADER BAR ── */
+  .top-bar {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .top-bar-left {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+
+  .sys-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(11px, 2.2vw, 16px);
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    color: var(--amber);
+    text-shadow: 0 0 12px var(--amber);
+  }
+
+  .sys-sub {
+    font-size: 10px;
+    color: var(--amber-dim);
+    letter-spacing: 0.15em;
+  }
+
+  .top-bar-right {
+    display: flex; gap: 18px; align-items: center;
+  }
+
+  .status-dot {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--amber-dim);
+  }
+
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 7px var(--green);
+    animation: blink 1.4s infinite;
+  }
+
+  .dot.red { background: var(--red); box-shadow: 0 0 7px var(--red); }
+
+  @keyframes blink {
+    0%,100% { opacity: 1; } 50% { opacity: 0.2; }
+  }
+
+  .clock-display {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: var(--amber);
+    text-shadow: 0 0 10px var(--amber);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── TRACKER CARD ── */
+  .tracker-card {
+    width: 100%;
+    max-width: 860px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Corner decorations */
+  .tracker-card::before,
+  .tracker-card::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border-color: var(--amber);
+    border-style: solid;
+    z-index: 2;
+  }
+  .tracker-card::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
+  .tracker-card::after  { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,176,0,0.06);
+    flex-wrap: wrap; gap: 8px;
+  }
+
+  .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(10px, 2vw, 13px);
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+  }
+
+  .card-meta {
+    font-size: 10px;
+    color: var(--amber-dim);
+    letter-spacing: 0.12em;
+  }
+
+  /* ── MAIN CONTENT: radar + details side by side ── */
+  .card-body {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+  }
+
+  @media (max-width: 600px) {
+    .card-body { grid-template-columns: 1fr; }
+  }
+
+  /* ── RADAR PANEL ── */
+  .radar-panel {
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    background: rgba(0,0,0,0.25);
+  }
+
+  @media (max-width: 600px) {
+    .radar-panel { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  .radar-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--amber-dim);
+    text-align: center;
+  }
+
+  .radar-svg-wrap {
+    position: relative;
+    width: 160px; height: 160px;
+  }
+
+  .radar-svg {
+    width: 100%; height: 100%;
+  }
+
+  /* Radar sweep */
+  .sweep {
+    transform-origin: 80px 80px;
+    animation: sweep 3s linear infinite;
+  }
+
+  @keyframes sweep {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* Ping dot on radar */
+  .ping-dot {
+    animation: pingpulse 3s ease-out infinite;
+  }
+
+  @keyframes pingpulse {
+    0%   { r: 4; opacity: 1; }
+    60%  { r: 4; opacity: 1; }
+    100% { r: 10; opacity: 0; }
+  }
+
+  .ping-ring {
+    animation: pingring 3s ease-out infinite;
+  }
+  @keyframes pingring {
+    0%   { r: 6; opacity: 0.7; stroke-width: 1.5; }
+    60%  { r: 6; opacity: 0.7; }
+    100% { r: 22; opacity: 0; stroke-width: 0.5; }
+  }
+
+  .radar-coords {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: var(--amber);
+    text-align: center;
+    text-shadow: 0 0 8px var(--amber);
+    line-height: 1.3;
+    min-height: 44px;
+  }
+
+  /* Scan button */
+  .scan-btn {
+    position: relative;
+    background: transparent;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    padding: 10px 20px;
+    cursor: pointer;
+    text-transform: uppercase;
+    overflow: hidden;
+    transition: background 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+
+  .scan-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--amber);
+    transform: translateX(-100%);
+    transition: transform 0.25s;
+    opacity: 0.12;
+  }
+
+  .scan-btn:hover::before { transform: translateX(0); }
+  .scan-btn:hover {
+    box-shadow: 0 0 16px var(--amber-glow);
+    background: rgba(255,176,0,0.08);
+  }
+
+  .scan-btn:active { transform: scale(0.97); }
+  .scan-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-flicker {
+    animation: flicker 0.08s steps(1) 3;
+  }
+  @keyframes flicker {
+    0%,100% { opacity: 1; } 50% { opacity: 0; }
+  }
+
+  /* ── DETAILS PANEL ── */
+  .details-panel {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,176,0,0.08);
+    padding-bottom: 9px;
+  }
+
+  .detail-row:last-child { border-bottom: none; }
+
+  .detail-icon {
+    font-size: 16px;
+    min-width: 20px;
+    margin-top: 2px;
+    filter: sepia(1) saturate(3) hue-rotate(5deg);
+  }
+
+  .detail-info { flex: 1; }
+
+  .detail-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--amber-dim);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .detail-value {
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: var(--amber);
+    text-shadow: 0 0 8px rgba(255,176,0,0.5);
+    letter-spacing: 0.05em;
+    min-height: 24px;
+  }
+
+  .detail-value.pending {
+    color: var(--amber-dim);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  /* Typing cursor */
+  .typing::after {
+    content: '█';
+    animation: cur 0.7s steps(1) infinite;
+  }
+  @keyframes cur { 0%,100%{opacity:1}50%{opacity:0} }
+
+  /* ── MAP SECTION ── */
+  .map-section {
+    border-top: 1px solid var(--border);
+    position: relative;
+  }
+
+  .map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: rgba(255,176,0,0.05);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; gap: 6px;
+  }
+
+  .map-header-left {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--amber-dim);
+  }
+
+  .map-header-right { display: flex; gap: 10px; align-items: center; }
+
+  .map-badge {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    color: var(--amber-dim);
+  }
+
+  .open-maps-btn {
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .open-maps-btn:hover {
+    color: var(--amber);
+    border-color: var(--amber);
+    box-shadow: 0 0 10px var(--amber-glow);
+  }
+
+  .map-container {
+    width: 100%;
+    height: 320px;
+    background: #050607;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (max-width: 500px) {
+    .map-container { height: 230px; }
+  }
+
+  .map-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--amber-dim);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .map-placeholder svg {
+    opacity: 0.3;
+  }
+
+  #mapFrame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+    filter: sepia(0.4) saturate(0.7) brightness(0.8) hue-rotate(15deg);
+  }
+
+  /* Tactical map overlay corners */
+  .map-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .map-overlay::before,
+  .map-overlay::after {
+    content: '';
+    position: absolute;
+    width: 28px; height: 28px;
+    border-color: var(--amber);
+    border-style: solid;
+    opacity: 0.7;
+  }
+  .map-overlay::before { top: 6px; left: 6px; border-width: 2px 0 0 2px; }
+  .map-overlay::after  { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+
+  /* Map scanning line */
+  .map-scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--amber), transparent);
+    opacity: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .map-scan-line.active {
+    opacity: 0.6;
+    animation: scanline 2.5s linear infinite;
+  }
+
+  @keyframes scanline {
+    0%   { top: 0; opacity: 0; }
+    5%   { opacity: 0.6; }
+    95%  { opacity: 0.6; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  /* Crosshair target on map */
+  .map-target {
+    position: absolute;
+    width: 40px; height: 40px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    pointer-events: none;
+    display: none;
+  }
+
+  .map-target.visible { display: block; }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: rgba(255,176,0,0.35);
+    padding-top: 4px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* ── CLASSIFIED STAMP ── */
+  .classified-stamp {
+    position: absolute;
+    top: 12px; right: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    color: var(--red);
+    border: 2px solid var(--red);
+    padding: 2px 8px;
+    opacity: 0.55;
+    transform: rotate(-8deg);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* ── NOISE overlay ── */
+  .noise {
+    position: fixed; inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9997;
+  }
+
+  /* Loading bar */
+  .loading-bar-wrap {
+    width: 100%;
+    height: 2px;
+    background: rgba(255,176,0,0.1);
+    overflow: hidden;
+    display: none;
+  }
+  .loading-bar-wrap.active { display: block; }
+
+  .loading-bar-inner {
+    height: 100%;
+    width: 0;
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+    animation: loadbar 2.2s ease-in-out forwards;
+  }
+  @keyframes loadbar {
+    0%   { width: 0; }
+    40%  { width: 55%; }
+    70%  { width: 78%; }
+    100% { width: 100%; }
+  }
+
+  /* Alert flash */
+  @keyframes alertflash {
+    0%,100% { background: transparent; }
+    50% { background: rgba(255,176,0,0.06); }
+  }
+  .alert-flash { animation: alertflash 0.3s ease 4; }
+
+  /* Glitch for heading on load */
+  .glitch {
+    animation: glitch1 0.08s steps(1) 6;
+  }
+  @keyframes glitch1 {
+    0%   { text-shadow: 0 0 12px var(--amber); }
+    33%  { text-shadow: 2px 0 12px #ff0080, -2px 0 8px #00ffff; }
+    66%  { text-shadow: -2px 0 12px #ff8800, 2px 0 8px #ffff00; }
+    100% { text-shadow: 0 0 12px var(--amber); }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<div class="main-wrapper">
+
+  <!-- TOP HEADER -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="sys-title" id="sysTitle">TACTICAL LOCATION SYSTEM</div>
+      <div class="sys-sub">FIELD INTELLIGENCE MODULE · UNIT TRACKER v4.2 · ENCRYPTED CHANNEL</div>
+    </div>
+    <div class="top-bar-right">
+      <div class="status-dot"><div class="dot" id="statusDot"></div><span id="statusText">STANDBY</span></div>
+      <div class="clock-display" id="clockDisplay">--:--:--</div>
+    </div>
+  </div>
+
+  <!-- TRACKER CARD -->
+  <div class="tracker-card" id="trackerCard">
+    <div class="classified-stamp">CLASSIFIED</div>
+
+    <!-- Card header -->
+    <div class="card-header">
+      <div class="card-title">◈ OPERATIVE POSITION TRACE</div>
+      <div class="card-meta" id="cardMeta">AWAITING AUTHORIZATION · SYS-READY</div>
+    </div>
+
+    <!-- Loading bar -->
+    <div class="loading-bar-wrap" id="loadingBar">
+      <div class="loading-bar-inner"></div>
+    </div>
+
+    <!-- Body: radar + details -->
+    <div class="card-body">
+
+      <!-- RADAR -->
+      <div class="radar-panel">
+        <div class="radar-label">◇ TRACKING RADAR ◇</div>
+
+        <div class="radar-svg-wrap">
+          <svg class="radar-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="radarGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffb000" stop-opacity="0.08"/>
+                <stop offset="100%" stop-color="#ffb000" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#ffb000" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#ffb000" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Background fill -->
+            <circle cx="80" cy="80" r="76" fill="url(#radarGlow)" stroke="rgba(255,176,0,0.15)" stroke-width="1"/>
+
+            <!-- Rings -->
+            <circle cx="80" cy="80" r="19" fill="none" stroke="rgba(255,176,0,0.18)" stroke-width="0.7"/>
+            <circle cx="80" cy="80" r="38" fill="none" stroke="rgba(255,176,0,0.15)" stroke-width="0.7"/>
+            <circle cx="80" cy="80" r="57" fill="none" stroke="rgba(255,176,0,0.12)" stroke-width="0.7"/>
+            <circle cx="80" cy="80" r="76" fill="none" stroke="rgba(255,176,0,0.22)" stroke-width="1"/>
+
+            <!-- Crosshairs -->
+            <line x1="80" y1="4" x2="80" y2="156" stroke="rgba(255,176,0,0.12)" stroke-width="0.7"/>
+            <line x1="4" y1="80" x2="156" y2="80" stroke="rgba(255,176,0,0.12)" stroke-width="0.7"/>
+            <line x1="26" y1="26" x2="134" y2="134" stroke="rgba(255,176,0,0.07)" stroke-width="0.5"/>
+            <line x1="134" y1="26" x2="26" y2="134" stroke="rgba(255,176,0,0.07)" stroke-width="0.5"/>
+
+            <!-- Tick marks -->
+            <line x1="80" y1="4" x2="80" y2="12" stroke="rgba(255,176,0,0.5)" stroke-width="1"/>
+            <line x1="80" y1="148" x2="80" y2="156" stroke="rgba(255,176,0,0.5)" stroke-width="1"/>
+            <line x1="4" y1="80" x2="12" y2="80" stroke="rgba(255,176,0,0.5)" stroke-width="1"/>
+            <line x1="148" y1="80" x2="156" y2="80" stroke="rgba(255,176,0,0.5)" stroke-width="1"/>
+
+            <!-- Sweep arm -->
+            <g class="sweep" id="sweepGroup">
+              <path d="M80,80 L80,4" stroke="rgba(255,176,0,0.9)" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M80,80 L156,80 A76,76 0 0,0 80,4 Z" fill="url(#sweepGrad)" opacity="0.35"/>
+            </g>
+
+            <!-- Center dot -->
+            <circle cx="80" cy="80" r="3" fill="#ffb000" opacity="0.9"/>
+
+            <!-- Ping target (shown after locate) -->
+            <g id="radarTarget" style="display:none">
+              <circle class="ping-ring" cx="52" cy="54" r="6" fill="none" stroke="#ffb000" stroke-width="1.5"/>
+              <circle class="ping-dot" cx="52" cy="54" r="4" fill="#ffb000"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="radar-coords" id="radarCoords">-- N/A --<br>-- N/A --</div>
+
+        <button class="scan-btn" id="scanBtn" onclick="startTrace()">
+          ▶ TRACE MY LOCATION
+        </button>
+      </div>
+
+      <!-- DETAILS -->
+      <div class="details-panel" id="detailsPanel">
+
+        <div class="detail-row">
+          <div class="detail-icon">🌐</div>
+          <div class="detail-info">
+            <div class="detail-label">NATION / COUNTRY</div>
+            <div class="detail-value pending" id="valCountry">[ AWAITING SIGNAL ]</div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-icon">📍</div>
+          <div class="detail-info">
+            <div class="detail-label">PROVINCE / STATE</div>
+            <div class="detail-value pending" id="valProvince">[ AWAITING SIGNAL ]</div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-icon">🗺</div>
+          <div class="detail-info">
+            <div class="detail-label">DISTRICT / REGION</div>
+            <div class="detail-value pending" id="valDistrict">[ AWAITING SIGNAL ]</div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-icon">📌</div>
+          <div class="detail-info">
+            <div class="detail-label">LOCALITY · GN DIVISION</div>
+            <div class="detail-value pending" id="valLocality">[ AWAITING SIGNAL ]</div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-icon">📮</div>
+          <div class="detail-info">
+            <div class="detail-label">ZIP / POSTAL CODE</div>
+            <div class="detail-value pending" id="valZip">[ AWAITING SIGNAL ]</div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-icon" id="weatherIcon">🌡</div>
+          <div class="detail-info">
+            <div class="detail-label">ATMOSPHERIC CONDITIONS</div>
+            <div class="detail-value pending" id="valWeather">[ AWAITING SIGNAL ]</div>
+            <div style="font-size:10px;color:var(--amber-dim);letter-spacing:0.1em;margin-top:3px;" id="valTemp"></div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-icon">🔗</div>
+          <div class="detail-info">
+            <div class="detail-label">COORDINATES</div>
+            <div class="detail-value pending" id="valCoords">[ AWAITING SIGNAL ]</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAP SECTION -->
+    <div class="map-section">
+      <div class="map-header">
+        <div class="map-header-left">◈ SATELLITE OVERLAY · LIVE FEED</div>
+        <div class="map-header-right">
+          <div class="map-badge" id="mapBadge">NO LOCK</div>
+          <a href="#" id="openMapsBtn" class="open-maps-btn" target="_blank" style="pointer-events:none;opacity:0.4">
+            ↗ OPEN IN MAPS
+          </a>
+        </div>
+      </div>
+
+      <div class="map-container">
+        <div class="map-placeholder" id="mapPlaceholder">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="4" width="40" height="40" rx="2" stroke="#ffb000" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <circle cx="24" cy="20" r="7" stroke="#ffb000" stroke-width="1.5"/>
+            <path d="M24 27 C24 27 16 35 16 38 C16 40 20 42 24 42 C28 42 32 40 32 38 C32 35 24 27 24 27Z" stroke="#ffb000" stroke-width="1.2" fill="none"/>
+            <circle cx="24" cy="20" r="2.5" fill="#ffb000"/>
+          </svg>
+          <span id="mapPlaceholderText">INITIATE TRACE TO ACQUIRE SATELLITE LOCK</span>
+        </div>
+
+        <iframe id="mapFrame" allowfullscreen loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+        <div class="map-overlay">
+          <!-- corner decorations from CSS -->
+          <!-- Extra corner top-right -->
+          <svg style="position:absolute;top:6px;right:6px;opacity:0.7" width="28" height="28" viewBox="0 0 28 28">
+            <polyline points="28,0 28,28 0,28" fill="none" stroke="#ffb000" stroke-width="2"/>
+          </svg>
+          <!-- Extra corner bottom-left -->
+          <svg style="position:absolute;bottom:6px;left:6px;opacity:0.7" width="28" height="28" viewBox="0 0 28 28">
+            <polyline points="0,28 0,0 28,0" fill="none" stroke="#ffb000" stroke-width="2"/>
+          </svg>
+
+          <!-- Coordinate labels on map corners -->
+          <div style="position:absolute;top:10px;left:38px;font-size:9px;letter-spacing:0.12em;color:rgba(255,176,0,0.45);" id="mapCoordLabel">-- LAT : -- LON</div>
+          <div style="position:absolute;bottom:10px;right:38px;font-size:9px;letter-spacing:0.12em;color:rgba(255,176,0,0.4);">◈ ENCRYPTED · EYES ONLY</div>
+        </div>
+
+        <div class="map-scan-line" id="mapScanLine"></div>
+
+        <!-- Crosshair target center -->
+        <svg class="map-target" id="mapTarget" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="14" fill="none" stroke="#ffb000" stroke-width="1.2" stroke-dasharray="3 2"/>
+          <circle cx="20" cy="20" r="3" fill="#ffb000" opacity="0.9"/>
+          <line x1="20" y1="2" x2="20" y2="10" stroke="#ffb000" stroke-width="1.5"/>
+          <line x1="20" y1="30" x2="20" y2="38" stroke="#ffb000" stroke-width="1.5"/>
+          <line x1="2" y1="20" x2="10" y2="20" stroke="#ffb000" stroke-width="1.5"/>
+          <line x1="30" y1="20" x2="38" y2="20" stroke="#ffb000" stroke-width="1.5"/>
+          <circle cx="20" cy="20" r="18" fill="none" stroke="#ffb000" stroke-width="0.5" opacity="0.4">
+            <animate attributeName="r" values="14;20;14" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span id="statusBarLeft">SYS: NOMINAL · ENC: AES-256 · CHANNEL: SECURE</span>
+    <span id="statusBarRight">IP: MASKED · USER: OPERATIVE-01 · CLEARANCE: LEVEL-5</span>
+  </div>
+
+</div>
+
+<script>
+  // ── CLOCK ──
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clockDisplay').textContent = h+':'+m+':'+s;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── TYPING EFFECT ──
+  function typeText(el, text, speed, callback) {
+    el.textContent = '';
+    el.classList.add('typing');
+    let i = 0;
+    const interval = setInterval(() => {
+      el.textContent += text[i];
+      i++;
+      if (i >= text.length) {
+        clearInterval(interval);
+        el.classList.remove('typing');
+        if (callback) callback();
+      }
+    }, speed);
+  }
+
+  // ── WEATHER (Open-Meteo, no API key required) ──
+  // WMO weather code map
+  const wmoMap = {
+    0:  { label: 'CLEAR SKY',           icon: '☀️' },
+    1:  { label: 'MAINLY CLEAR',        icon: '🌤' },
+    2:  { label: 'PARTLY CLOUDY',       icon: '⛅' },
+    3:  { label: 'OVERCAST',            icon: '☁️' },
+    45: { label: 'FOG',                 icon: '🌫' },
+    48: { label: 'RIME FOG',            icon: '🌫' },
+    51: { label: 'LIGHT DRIZZLE',       icon: '🌦' },
+    53: { label: 'MODERATE DRIZZLE',    icon: '🌦' },
+    55: { label: 'DENSE DRIZZLE',       icon: '🌧' },
+    61: { label: 'LIGHT RAIN',          icon: '🌧' },
+    63: { label: 'MODERATE RAIN',       icon: '🌧' },
+    65: { label: 'HEAVY RAIN',          icon: '🌧' },
+    71: { label: 'LIGHT SNOW',          icon: '🌨' },
+    73: { label: 'MODERATE SNOW',       icon: '❄️' },
+    75: { label: 'HEAVY SNOW',          icon: '❄️' },
+    80: { label: 'LIGHT SHOWERS',       icon: '🌦' },
+    81: { label: 'MODERATE SHOWERS',    icon: '🌧' },
+    82: { label: 'VIOLENT SHOWERS',     icon: '⛈' },
+    95: { label: 'THUNDERSTORM',        icon: '⛈' },
+    96: { label: 'THUNDERSTORM+HAIL',   icon: '⛈' },
+    99: { label: 'THUNDERSTORM+HAIL',   icon: '⛈' },
+  };
+
+  function fetchWeather(lat, lon) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&temperature_unit=celsius&timezone=auto`;
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        const current = data.current || {};
+        const code  = current.weathercode ?? -1;
+        const tempC = current.temperature_2m;
+        const tempF = tempC !== undefined ? (tempC * 9/5 + 32).toFixed(1) : null;
+
+        const wmo = wmoMap[code] || { label: 'UNKNOWN CONDITIONS', icon: '🌡' };
+
+        // Update icon
+        document.getElementById('weatherIcon').textContent = wmo.icon;
+
+        // Condition
+        const wEl = document.getElementById('valWeather');
+        wEl.className = 'detail-value';
+        typeText(wEl, wmo.label, 30, () => {
+          // Temperature line after condition typed
+          if (tempC !== undefined) {
+            const tEl = document.getElementById('valTemp');
+            typeText(tEl, `${tempC.toFixed(1)}°C  /  ${tempF}°F`, 28);
+          }
+        });
+      })
+      .catch(() => {
+        const wEl = document.getElementById('valWeather');
+        wEl.className = 'detail-value pending';
+        wEl.textContent = '[ WEATHER FEED UNAVAILABLE ]';
+      });
+  }
+
+  // ── MAIN TRACE FUNCTION ──
+  let traceData = null;
+
+  function startTrace() {
+    const btn = document.getElementById('scanBtn');
+    btn.disabled = true;
+    btn.classList.add('btn-flicker');
+
+    // Update status
+    document.getElementById('statusDot').classList.add('red');
+    document.getElementById('statusText').textContent = 'ACQUIRING';
+    document.getElementById('cardMeta').textContent = 'INITIATING SIGNAL ACQUISITION...';
+
+    // Show loading bar
+    const lb = document.getElementById('loadingBar');
+    lb.classList.add('active');
+    lb.innerHTML = '<div class="loading-bar-inner"></div>';
+
+    // Flash the card
+    document.getElementById('trackerCard').classList.add('alert-flash');
+    setTimeout(() => document.getElementById('trackerCard').classList.remove('alert-flash'), 1200);
+
+    // Show radar target
+    document.getElementById('radarTarget').style.display = 'block';
+
+    // Set pending states on all values
+    const fields = ['valCountry','valProvince','valDistrict','valLocality','valZip','valWeather','valCoords'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'detail-value pending';
+      el.textContent = '[ SCANNING... ]';
+    });
+    document.getElementById('valTemp').textContent = '';
+
+    // Get geolocation
+    if (!navigator.geolocation) {
+      showError('GEOLOCATION MODULE UNAVAILABLE');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => onGeoSuccess(pos),
+      err => showError('SIGNAL BLOCKED — ENABLE LOCATION ACCESS'),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  function onGeoSuccess(pos) {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+
+    document.getElementById('statusText').textContent = 'LOCK ACQUIRED';
+    document.getElementById('cardMeta').textContent = 'GPS LOCK · REVERSE GEOCODING...';
+
+    // Update radar coords
+    const latStr = (lat >= 0 ? lat.toFixed(4)+'°N' : Math.abs(lat).toFixed(4)+'°S');
+    const lonStr = (lon >= 0 ? lon.toFixed(4)+'°E' : Math.abs(lon).toFixed(4)+'°W');
+    document.getElementById('radarCoords').innerHTML = latStr + '<br>' + lonStr;
+    document.getElementById('mapCoordLabel').textContent = latStr + ' : ' + lonStr;
+
+    // Set valCoords immediately
+    const coordEl = document.getElementById('valCoords');
+    coordEl.className = 'detail-value';
+    typeText(coordEl, lat.toFixed(5) + ', ' + lon.toFixed(5), 28);
+
+    // Fetch weather via Open-Meteo (free, no API key)
+    fetchWeather(lat, lon);
+
+    // Reverse geocode with Nominatim
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
+
+    fetch(url, { headers: { 'Accept-Language': 'en' } })
+      .then(r => r.json())
+      .then(data => populateDetails(data, lat, lon))
+      .catch(() => populateDetailsFallback(lat, lon));
+  }
+
+  function populateDetails(data, lat, lon) {
+    const addr = data.address || {};
+
+    const country  = addr.country || 'UNKNOWN';
+    const province = addr.state || addr.region || addr.county || 'UNKNOWN';
+    const district = addr.county || addr.state_district || addr.city || addr.town || addr.village || 'UNKNOWN';
+    const zip      = addr.postcode || 'N/A';
+
+    // GN Division / locality — drill down to the finest available grain:
+    // suburb > neighbourhood > quarter > hamlet > locality > village > town > city_district
+    const locality =
+      addr.suburb        ||
+      addr.neighbourhood ||
+      addr.quarter       ||
+      addr.hamlet        ||
+      addr.locality      ||
+      addr.village       ||
+      addr.town          ||
+      addr.city_district ||
+      addr.residential   ||
+      addr.road          ||
+      'UNRESOLVED';
+
+    const fields = [
+      { id: 'valCountry',  val: country.toUpperCase() },
+      { id: 'valProvince', val: province.toUpperCase() },
+      { id: 'valDistrict', val: district.toUpperCase() },
+      { id: 'valLocality', val: locality.toUpperCase() },
+      { id: 'valZip',      val: zip },
+    ];
+
+    let delay = 0;
+    fields.forEach(f => {
+      setTimeout(() => {
+        const el = document.getElementById(f.id);
+        el.className = 'detail-value';
+        typeText(el, f.val, 35);
+      }, delay);
+      delay += 400;
+    });
+
+    // After all fields typed, finalize
+    setTimeout(() => {
+      finalizeTrace(lat, lon, country, province, district);
+    }, delay + 200);
+  }
+
+  function populateDetailsFallback(lat, lon) {
+    ['valCountry','valProvince','valDistrict','valLocality','valZip'].forEach((id, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        el.className = 'detail-value';
+        typeText(el, i === 4 ? 'N/A' : 'UNABLE TO RESOLVE', 30);
+      }, i * 350);
+    });
+    setTimeout(() => finalizeTrace(lat, lon, '', '', ''), 1900);
+  }
+
+  function finalizeTrace(lat, lon, country, province, district) {
+    traceData = { lat, lon, country, province, district };
+
+    // Status
+    document.getElementById('statusDot').classList.remove('red');
+    document.getElementById('statusText').textContent = 'TARGET LOCKED';
+    document.getElementById('cardMeta').textContent = `TRACE COMPLETE · ${new Date().toUTCString().toUpperCase()}`;
+    document.getElementById('sysTitle').classList.add('glitch');
+    setTimeout(() => document.getElementById('sysTitle').classList.remove('glitch'), 600);
+
+    // Loading bar hide
+    setTimeout(() => document.getElementById('loadingBar').classList.remove('active'), 300);
+
+    // Enable map
+    showMap(lat, lon);
+
+    // Re-enable button
+    setTimeout(() => {
+      const btn = document.getElementById('scanBtn');
+      btn.disabled = false;
+      btn.textContent = '↺ RE-TRACE LOCATION';
+      btn.classList.remove('btn-flicker');
+    }, 800);
+
+    // Google Maps link
+    const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}&z=15`;
+    const openBtn = document.getElementById('openMapsBtn');
+    openBtn.href = mapsUrl;
+    openBtn.style.pointerEvents = 'auto';
+    openBtn.style.opacity = '1';
+
+    document.getElementById('mapBadge').textContent = 'LOCK CONFIRMED';
+  }
+
+  function showMap(lat, lon) {
+    const placeholder = document.getElementById('mapPlaceholder');
+    placeholder.style.display = 'none';
+
+    const mapFrame = document.getElementById('mapFrame');
+    // Use OpenStreetMap embed (no API key needed)
+    const z = 14;
+    const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.05},${lat-0.05},${lon+0.05},${lat+0.05}&layer=mapnik&marker=${lat},${lon}`;
+    mapFrame.src = src;
+    mapFrame.style.display = 'block';
+
+    // Show scan line
+    const scanLine = document.getElementById('mapScanLine');
+    scanLine.classList.add('active');
+
+    // Show crosshair
+    document.getElementById('mapTarget').classList.add('visible');
+
+    setTimeout(() => scanLine.classList.remove('active'), 5000);
+  }
+
+  function showError(msg) {
+    document.getElementById('statusDot').classList.remove('red');
+    document.getElementById('statusText').textContent = 'SIGNAL LOST';
+    document.getElementById('cardMeta').textContent = '⚠ ' + msg;
+
+    const fields = ['valCountry','valProvince','valDistrict','valLocality','valZip','valWeather','valCoords'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'detail-value pending';
+      el.textContent = '[ ' + msg + ' ]';
+    });
+
+    document.getElementById('loadingBar').classList.remove('active');
+    document.getElementById('radarTarget').style.display = 'none';
+
+    const btn = document.getElementById('scanBtn');
+    btn.disabled = false;
+    btn.textContent = '▶ TRACE MY LOCATION';
+    btn.classList.remove('btn-flicker');
+  }
+
+  // Flicker status bar text
+  const sbMessages = [
+    'SYS: NOMINAL · ENC: AES-256 · CHANNEL: SECURE',
+    'UPLINK: STABLE · SATELLITE: ONLINE · SIGNAL: STRONG',
+    'NETWORK: CLASSIFIED · ROUTE: ENCRYPTED · RELAY: ACTIVE',
+  ];
+  let sbIdx = 0;
+  setInterval(() => {
+    sbIdx = (sbIdx+1) % sbMessages.length;
+    document.getElementById('statusBarLeft').textContent = sbMessages[sbIdx];
+  }, 4000);
+</script>
+</body>
+</html>
