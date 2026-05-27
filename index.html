@@ -732,7 +732,7 @@
         </div>
 
         <div class="detail-row">
-          <div class="detail-icon" id="weatherIcon">🌡</div>
+          <div class="detail-icon" id="weatherIcon">◈</div>
           <div class="detail-info">
             <div class="detail-label">ATMOSPHERIC CONDITIONS</div>
             <div class="detail-value pending" id="valWeather">[ AWAITING SIGNAL ]</div>
@@ -852,28 +852,28 @@
   // ── WEATHER (Open-Meteo, no API key required) ──
   // WMO weather code map
   const wmoMap = {
-    0:  { label: 'CLEAR SKY',           icon: '☀️' },
-    1:  { label: 'MAINLY CLEAR',        icon: '🌤' },
-    2:  { label: 'PARTLY CLOUDY',       icon: '⛅' },
-    3:  { label: 'OVERCAST',            icon: '☁️' },
-    45: { label: 'FOG',                 icon: '🌫' },
-    48: { label: 'RIME FOG',            icon: '🌫' },
-    51: { label: 'LIGHT DRIZZLE',       icon: '🌦' },
-    53: { label: 'MODERATE DRIZZLE',    icon: '🌦' },
-    55: { label: 'DENSE DRIZZLE',       icon: '🌧' },
-    61: { label: 'LIGHT RAIN',          icon: '🌧' },
-    63: { label: 'MODERATE RAIN',       icon: '🌧' },
-    65: { label: 'HEAVY RAIN',          icon: '🌧' },
-    71: { label: 'LIGHT SNOW',          icon: '🌨' },
-    73: { label: 'MODERATE SNOW',       icon: '❄️' },
-    75: { label: 'HEAVY SNOW',          icon: '❄️' },
-    80: { label: 'LIGHT SHOWERS',       icon: '🌦' },
-    81: { label: 'MODERATE SHOWERS',    icon: '🌧' },
-    82: { label: 'VIOLENT SHOWERS',     icon: '⛈' },
-    95: { label: 'THUNDERSTORM',        icon: '⛈' },
-    96: { label: 'THUNDERSTORM+HAIL',   icon: '⛈' },
-    99: { label: 'THUNDERSTORM+HAIL',   icon: '⛈' },
-  };
+    0:  { label: 'CLEAR SKY',          icon: '◈' },
+    1:  { label: 'MAINLY CLEAR',       icon: '◈' },
+    2:  { label: 'PARTLY CLOUDY',      icon: '◫' },
+    3:  { label: 'OVERCAST',           icon: '▦' },
+    45: { label: 'FOG',                icon: '≋' },
+    48: { label: 'RIME FOG',           icon: '≋' },
+    51: { label: 'LIGHT DRIZZLE',      icon: '∷' },
+    53: { label: 'MODERATE DRIZZLE',   icon: '∷' },
+    55: { label: 'DENSE DRIZZLE',      icon: '⫶' },
+    61: { label: 'LIGHT RAIN',         icon: '⫶' },
+    63: { label: 'MODERATE RAIN',      icon: '⫶' },
+    65: { label: 'HEAVY RAIN',         icon: '⫶' },
+    71: { label: 'LIGHT SNOW',         icon: '❋' },
+    73: { label: 'MODERATE SNOW',      icon: '❋' },
+    75: { label: 'HEAVY SNOW',         icon: '❋' },
+    80: { label: 'LIGHT SHOWERS',      icon: '⫶' },
+    81: { label: 'MODERATE SHOWERS',   icon: '⫶' },
+    82: { label: 'VIOLENT SHOWERS',    icon: '▲' },
+    95: { label: 'THUNDERSTORM',       icon: '▲' },
+    96: { label: 'THUNDERSTORM+HAIL',  icon: '▲' },
+    99: { label: 'THUNDERSTORM+HAIL',  icon: '▲' },
+};
 
   function fetchWeather(lat, lon) {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&temperature_unit=celsius&timezone=auto`;
