@@ -588,6 +588,37 @@
     66%  { text-shadow: -2px 0 12px #ff8800, 2px 0 8px #ffff00; }
     100% { text-shadow: 0 0 12px var(--amber); }
   }
+
+  /* ── SHARE BUTTON ── */
+  .share-btn {
+    position: relative;
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber-dim);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    padding: 8px 20px;
+    cursor: pointer;
+    text-transform: uppercase;
+    width: 100%;
+    transition: all 0.2s;
+    display: none;
+  }
+  .share-btn:hover {
+    color: var(--amber);
+    border-color: var(--amber);
+    box-shadow: 0 0 16px var(--amber-glow);
+  }
+  .share-confirm {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    text-align: center;
+    min-height: 14px;
+    transition: opacity 0.3s;
+  }
 </style>
 </head>
 <body>
@@ -686,6 +717,8 @@
         <button class="scan-btn" id="scanBtn" onclick="startTrace()">
           ▶ TRACE MY LOCATION
         </button>
+        <button class="share-btn" id="shareBtn" onclick="shareLocation()">◈ COPY SHARE LINK</button>
+        <div class="share-confirm" id="shareConfirm"></div>
       </div>
 
       <!-- DETAILS -->
@@ -778,7 +811,6 @@
           referrerpolicy="no-referrer-when-downgrade"></iframe>
 
         <div class="map-overlay">
-          <!-- corner decorations from CSS -->
           <!-- Extra corner top-right -->
           <svg style="position:absolute;top:6px;right:6px;opacity:0.7" width="28" height="28" viewBox="0 0 28 28">
             <polyline points="28,0 28,28 0,28" fill="none" stroke="#ffb000" stroke-width="2"/>
@@ -850,7 +882,6 @@
   }
 
   // ── WEATHER (Open-Meteo, no API key required) ──
-  // WMO weather code map
   const wmoMap = {
     0:  { label: 'CLEAR SKY',          icon: '◈' },
     1:  { label: 'MAINLY CLEAR',       icon: '◈' },
@@ -873,7 +904,7 @@
     95: { label: 'THUNDERSTORM',       icon: '▲' },
     96: { label: 'THUNDERSTORM+HAIL',  icon: '▲' },
     99: { label: 'THUNDERSTORM+HAIL',  icon: '▲' },
-};
+  };
 
   function fetchWeather(lat, lon) {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&temperature_unit=celsius&timezone=auto`;
@@ -885,16 +916,13 @@
         const tempC = current.temperature_2m;
         const tempF = tempC !== undefined ? (tempC * 9/5 + 32).toFixed(1) : null;
 
-        const wmo = wmoMap[code] || { label: 'UNKNOWN CONDITIONS', icon: '🌡' };
+        const wmo = wmoMap[code] || { label: 'UNKNOWN CONDITIONS', icon: '◈' };
 
-        // Update icon
         document.getElementById('weatherIcon').textContent = wmo.icon;
 
-        // Condition
         const wEl = document.getElementById('valWeather');
         wEl.className = 'detail-value';
         typeText(wEl, wmo.label, 30, () => {
-          // Temperature line after condition typed
           if (tempC !== undefined) {
             const tEl = document.getElementById('valTemp');
             typeText(tEl, `${tempC.toFixed(1)}°C  /  ${tempF}°F`, 28);
@@ -916,24 +944,19 @@
     btn.disabled = true;
     btn.classList.add('btn-flicker');
 
-    // Update status
     document.getElementById('statusDot').classList.add('red');
     document.getElementById('statusText').textContent = 'ACQUIRING';
     document.getElementById('cardMeta').textContent = 'INITIATING SIGNAL ACQUISITION...';
 
-    // Show loading bar
     const lb = document.getElementById('loadingBar');
     lb.classList.add('active');
     lb.innerHTML = '<div class="loading-bar-inner"></div>';
 
-    // Flash the card
     document.getElementById('trackerCard').classList.add('alert-flash');
     setTimeout(() => document.getElementById('trackerCard').classList.remove('alert-flash'), 1200);
 
-    // Show radar target
     document.getElementById('radarTarget').style.display = 'block';
 
-    // Set pending states on all values
     const fields = ['valCountry','valProvince','valDistrict','valLocality','valZip','valWeather','valCoords'];
     fields.forEach(id => {
       const el = document.getElementById(id);
@@ -942,7 +965,6 @@
     });
     document.getElementById('valTemp').textContent = '';
 
-    // Get geolocation
     if (!navigator.geolocation) {
       showError('GEOLOCATION MODULE UNAVAILABLE');
       return;
@@ -962,21 +984,17 @@
     document.getElementById('statusText').textContent = 'LOCK ACQUIRED';
     document.getElementById('cardMeta').textContent = 'GPS LOCK · REVERSE GEOCODING...';
 
-    // Update radar coords
     const latStr = (lat >= 0 ? lat.toFixed(4)+'°N' : Math.abs(lat).toFixed(4)+'°S');
     const lonStr = (lon >= 0 ? lon.toFixed(4)+'°E' : Math.abs(lon).toFixed(4)+'°W');
     document.getElementById('radarCoords').innerHTML = latStr + '<br>' + lonStr;
     document.getElementById('mapCoordLabel').textContent = latStr + ' : ' + lonStr;
 
-    // Set valCoords immediately
     const coordEl = document.getElementById('valCoords');
     coordEl.className = 'detail-value';
     typeText(coordEl, lat.toFixed(5) + ', ' + lon.toFixed(5), 28);
 
-    // Fetch weather via Open-Meteo (free, no API key)
     fetchWeather(lat, lon);
 
-    // Reverse geocode with Nominatim
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
 
     fetch(url, { headers: { 'Accept-Language': 'en' } })
@@ -993,8 +1011,6 @@
     const district = addr.county || addr.state_district || addr.city || addr.town || addr.village || 'UNKNOWN';
     const zip      = addr.postcode || 'N/A';
 
-    // GN Division / locality — drill down to the finest available grain:
-    // suburb > neighbourhood > quarter > hamlet > locality > village > town > city_district
     const locality =
       addr.suburb        ||
       addr.neighbourhood ||
@@ -1026,7 +1042,6 @@
       delay += 400;
     });
 
-    // After all fields typed, finalize
     setTimeout(() => {
       finalizeTrace(lat, lon, country, province, district);
     }, delay + 200);
@@ -1046,20 +1061,16 @@
   function finalizeTrace(lat, lon, country, province, district) {
     traceData = { lat, lon, country, province, district };
 
-    // Status
     document.getElementById('statusDot').classList.remove('red');
     document.getElementById('statusText').textContent = 'TARGET LOCKED';
     document.getElementById('cardMeta').textContent = `TRACE COMPLETE · ${new Date().toUTCString().toUpperCase()}`;
     document.getElementById('sysTitle').classList.add('glitch');
     setTimeout(() => document.getElementById('sysTitle').classList.remove('glitch'), 600);
 
-    // Loading bar hide
     setTimeout(() => document.getElementById('loadingBar').classList.remove('active'), 300);
 
-    // Enable map
     showMap(lat, lon);
 
-    // Re-enable button
     setTimeout(() => {
       const btn = document.getElementById('scanBtn');
       btn.disabled = false;
@@ -1067,7 +1078,6 @@
       btn.classList.remove('btn-flicker');
     }, 800);
 
-    // Google Maps link
     const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}&z=15`;
     const openBtn = document.getElementById('openMapsBtn');
     openBtn.href = mapsUrl;
@@ -1075,6 +1085,7 @@
     openBtn.style.opacity = '1';
 
     document.getElementById('mapBadge').textContent = 'LOCK CONFIRMED';
+    document.getElementById('shareBtn').style.display = 'block';
   }
 
   function showMap(lat, lon) {
@@ -1082,17 +1093,13 @@
     placeholder.style.display = 'none';
 
     const mapFrame = document.getElementById('mapFrame');
-    // Use OpenStreetMap embed (no API key needed)
-    const z = 14;
     const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.05},${lat-0.05},${lon+0.05},${lat+0.05}&layer=mapnik&marker=${lat},${lon}`;
     mapFrame.src = src;
     mapFrame.style.display = 'block';
 
-    // Show scan line
     const scanLine = document.getElementById('mapScanLine');
     scanLine.classList.add('active');
 
-    // Show crosshair
     document.getElementById('mapTarget').classList.add('visible');
 
     setTimeout(() => scanLine.classList.remove('active'), 5000);
@@ -1119,7 +1126,7 @@
     btn.classList.remove('btn-flicker');
   }
 
-  // Flicker status bar text
+  // ── FLICKER STATUS BAR ──
   const sbMessages = [
     'SYS: NOMINAL · ENC: AES-256 · CHANNEL: SECURE',
     'UPLINK: STABLE · SATELLITE: ONLINE · SIGNAL: STRONG',
@@ -1130,6 +1137,53 @@
     sbIdx = (sbIdx+1) % sbMessages.length;
     document.getElementById('statusBarLeft').textContent = sbMessages[sbIdx];
   }, 4000);
+
+  // ── SHARE LOCATION ──
+  function shareLocation() {
+    if (!traceData) return;
+    const url = `${window.location.origin}${window.location.pathname}?lat=${traceData.lat}&lon=${traceData.lon}`;
+    navigator.clipboard.writeText(url).then(() => {
+      const el = document.getElementById('shareConfirm');
+      el.textContent = '✓ LINK COPIED TO CLIPBOARD';
+      setTimeout(() => el.textContent = '', 3000);
+    }).catch(() => {
+      const el = document.getElementById('shareConfirm');
+      el.textContent = '⚠ COPY FAILED — TRY AGAIN';
+      setTimeout(() => el.textContent = '', 3000);
+    });
+  }
+
+  // ── AUTO-LOAD SHARED COORDINATES FROM URL ──
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const lat = parseFloat(params.get('lat'));
+    const lon = parseFloat(params.get('lon'));
+    if (!isNaN(lat) && !isNaN(lon)) {
+      loadSharedLocation(lat, lon);
+    }
+  });
+
+  function loadSharedLocation(lat, lon) {
+    const btn = document.getElementById('scanBtn');
+    btn.disabled = true;
+    btn.classList.add('btn-flicker');
+    document.getElementById('statusDot').classList.add('red');
+    document.getElementById('statusText').textContent = 'ACQUIRING';
+    document.getElementById('cardMeta').textContent = 'LOADING SHARED COORDINATES...';
+    const lb = document.getElementById('loadingBar');
+    lb.classList.add('active');
+    lb.innerHTML = '<div class="loading-bar-inner"></div>';
+    document.getElementById('trackerCard').classList.add('alert-flash');
+    setTimeout(() => document.getElementById('trackerCard').classList.remove('alert-flash'), 1200);
+    document.getElementById('radarTarget').style.display = 'block';
+    ['valCountry','valProvince','valDistrict','valLocality','valZip','valWeather','valCoords'].forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'detail-value pending';
+      el.textContent = '[ SCANNING... ]';
+    });
+    document.getElementById('valTemp').textContent = '';
+    onGeoSuccess({ coords: { latitude: lat, longitude: lon } });
+  }
 </script>
 </body>
 </html>
