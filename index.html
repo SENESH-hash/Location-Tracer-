@@ -619,6 +619,221 @@
     min-height: 14px;
     transition: opacity 0.3s;
   }
+
+  /* ── READ-ONLY SHARED VIEW ── */
+  #sharedView {
+    display: none;
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .shared-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shared-card::before,
+  .shared-card::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    border-color: var(--amber);
+    border-style: solid;
+    z-index: 2;
+  }
+  .shared-card::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
+  .shared-card::after  { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+  .shared-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,176,0,0.06);
+    flex-wrap: wrap; gap: 6px;
+  }
+
+  .shared-card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+  }
+
+  .shared-readonly-badge {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    color: var(--red);
+    border: 1px solid var(--red);
+    padding: 2px 7px;
+    opacity: 0.8;
+  }
+
+  .shared-loading-bar {
+    width: 100%;
+    height: 2px;
+    background: rgba(255,176,0,0.1);
+    overflow: hidden;
+  }
+
+  .shared-loading-bar-inner {
+    height: 100%;
+    width: 0;
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+    animation: loadbar 2.2s ease-in-out forwards;
+  }
+
+  .shared-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .shared-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-bottom: 1px solid rgba(0,255,65,0.07);
+    padding-bottom: 8px;
+  }
+
+  .shared-row:last-child { border-bottom: none; }
+
+  .shared-label {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    color: var(--amber-dim);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    min-width: 130px;
+  }
+
+  .shared-value {
+    font-family: 'VT323', monospace;
+    font-size: 19px;
+    color: var(--amber);
+    text-shadow: 0 0 6px rgba(0,255,65,0.4);
+    letter-spacing: 0.05em;
+    min-height: 22px;
+  }
+
+  .shared-value.loading {
+    color: var(--amber-dim);
+    font-size: 13px;
+    margin-top: 3px;
+  }
+
+  .shared-map-wrap {
+    border-top: 1px solid var(--border);
+    position: relative;
+  }
+
+  .shared-map-inner {
+    width: 100%;
+    height: 220px;
+    background: #050607;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #sharedMapFrame {
+    width: 100%; height: 100%;
+    border: none;
+    display: none;
+    filter: sepia(0.4) saturate(0.7) brightness(0.8) hue-rotate(15deg);
+  }
+
+  .shared-map-overlay {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 3;
+  }
+  .shared-map-overlay::before,
+  .shared-map-overlay::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border-color: var(--amber);
+    border-style: solid;
+    opacity: 0.6;
+  }
+  .shared-map-overlay::before { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+  .shared-map-overlay::after  { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+  .shared-map-scan {
+    position: absolute; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--amber), transparent);
+    opacity: 0; z-index: 2; pointer-events: none;
+  }
+  .shared-map-scan.active {
+    opacity: 0.6;
+    animation: scanline 2.5s linear infinite;
+  }
+
+  .shared-map-target {
+    position: absolute;
+    width: 32px; height: 32px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4; pointer-events: none; display: none;
+  }
+  .shared-map-target.visible { display: block; }
+
+  .shared-map-placeholder {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+    color: var(--amber-dim); font-size: 10px;
+    letter-spacing: 0.14em; text-align: center;
+    padding: 16px;
+  }
+  .shared-map-placeholder svg { opacity: 0.25; }
+
+  .shared-footer {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: rgba(0,0,0,0.2);
+  }
+
+  .shared-footer-note {
+    font-size: 8px;
+    letter-spacing: 0.13em;
+    color: rgba(0,255,65,0.3);
+  }
+
+  .shared-open-maps {
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .shared-open-maps:hover {
+    color: var(--amber);
+    border-color: var(--amber);
+    box-shadow: 0 0 8px var(--amber-glow);
+  }
 </style>
 </head>
 <body>
@@ -638,6 +853,117 @@
       <div class="clock-display" id="clockDisplay">--:--:--</div>
     </div>
   </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- READ-ONLY SHARED VIEW (shown from URL params) -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="sharedView">
+    <div class="shared-card">
+      <div class="classified-stamp" style="font-size:9px;top:10px;right:10px;">READ ONLY</div>
+
+      <div class="shared-card-header">
+        <div class="shared-card-title">◈ INTERCEPTED POSITION DATA</div>
+        <div class="shared-readonly-badge">🔒 VIEW ONLY</div>
+      </div>
+
+      <div class="shared-loading-bar" id="sharedLoadingBar">
+        <div class="shared-loading-bar-inner"></div>
+      </div>
+
+      <div class="shared-body">
+        <div class="shared-row">
+          <div style="flex:1">
+            <div class="shared-label">NATION / COUNTRY</div>
+            <div class="shared-value loading" id="sv-country">[ DECRYPTING... ]</div>
+          </div>
+        </div>
+        <div class="shared-row">
+          <div style="flex:1">
+            <div class="shared-label">PROVINCE / STATE</div>
+            <div class="shared-value loading" id="sv-province">[ DECRYPTING... ]</div>
+          </div>
+        </div>
+        <div class="shared-row">
+          <div style="flex:1">
+            <div class="shared-label">DISTRICT / REGION</div>
+            <div class="shared-value loading" id="sv-district">[ DECRYPTING... ]</div>
+          </div>
+        </div>
+        <div class="shared-row">
+          <div style="flex:1">
+            <div class="shared-label">LOCALITY · GN DIVISION</div>
+            <div class="shared-value loading" id="sv-locality">[ DECRYPTING... ]</div>
+          </div>
+        </div>
+        <div class="shared-row">
+          <div style="flex:1">
+            <div class="shared-label">ZIP / POSTAL CODE</div>
+            <div class="shared-value loading" id="sv-zip">[ DECRYPTING... ]</div>
+          </div>
+        </div>
+        <div class="shared-row">
+          <div style="flex:1">
+            <div class="shared-label">ATMOSPHERIC CONDITIONS</div>
+            <div class="shared-value loading" id="sv-weather">[ DECRYPTING... ]</div>
+            <div style="font-size:10px;color:var(--amber-dim);letter-spacing:0.1em;margin-top:2px;" id="sv-temp"></div>
+          </div>
+        </div>
+        <div class="shared-row">
+          <div style="flex:1">
+            <div class="shared-label">COORDINATES</div>
+            <div class="shared-value loading" id="sv-coords">[ DECRYPTING... ]</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shared-map-wrap">
+        <div class="shared-map-inner">
+          <div class="shared-map-placeholder" id="sharedMapPlaceholder">
+            <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="40" height="40" rx="2" stroke="#00ff41" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <circle cx="24" cy="20" r="7" stroke="#00ff41" stroke-width="1.5"/>
+              <path d="M24 27 C24 27 16 35 16 38 C16 40 20 42 24 42 C28 42 32 40 32 38 C32 35 24 27 24 27Z" stroke="#00ff41" stroke-width="1.2" fill="none"/>
+              <circle cx="24" cy="20" r="2.5" fill="#00ff41"/>
+            </svg>
+            <span>ACQUIRING SATELLITE FEED...</span>
+          </div>
+          <iframe id="sharedMapFrame" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <div class="shared-map-overlay">
+            <svg style="position:absolute;top:5px;right:5px;opacity:0.6" width="20" height="20" viewBox="0 0 28 28">
+              <polyline points="28,0 28,28 0,28" fill="none" stroke="#00ff41" stroke-width="2"/>
+            </svg>
+            <svg style="position:absolute;bottom:5px;left:5px;opacity:0.6" width="20" height="20" viewBox="0 0 28 28">
+              <polyline points="0,28 0,0 28,0" fill="none" stroke="#00ff41" stroke-width="2"/>
+            </svg>
+            <div style="position:absolute;bottom:8px;right:30px;font-size:8px;letter-spacing:0.12em;color:rgba(0,255,65,0.35);">◈ ENCRYPTED · EYES ONLY</div>
+          </div>
+          <div class="shared-map-scan" id="sharedMapScan"></div>
+          <svg class="shared-map-target" id="sharedMapTarget" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="14" fill="none" stroke="#00ff41" stroke-width="1.2" stroke-dasharray="3 2"/>
+            <circle cx="20" cy="20" r="3" fill="#00ff41" opacity="0.9"/>
+            <line x1="20" y1="2" x2="20" y2="10" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="20" y1="30" x2="20" y2="38" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="2" y1="20" x2="10" y2="20" stroke="#00ff41" stroke-width="1.5"/>
+            <line x1="30" y1="20" x2="38" y2="20" stroke="#00ff41" stroke-width="1.5"/>
+            <circle cx="20" cy="20" r="18" fill="none" stroke="#00ff41" stroke-width="0.5" opacity="0.4">
+              <animate attributeName="r" values="14;20;14" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </div>
+      </div>
+
+      <div class="shared-footer">
+        <div class="shared-footer-note">◈ TRANSMITTED INTEL · READ-ONLY · DO NOT RETRANSMIT</div>
+        <a href="#" id="sharedOpenMaps" class="shared-open-maps" target="_blank" style="pointer-events:none;opacity:0.35">↗ OPEN IN MAPS</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- MAIN TRACKER CARD (hidden when shared view active) -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="mainTrackerWrap" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;">
 
   <!-- TRACKER CARD -->
   <div class="tracker-card" id="trackerCard">
@@ -851,6 +1177,8 @@
     <span id="statusBarRight">IP: MASKED · USER: senesh · CLEARANCE: LEVEL-5</span>
   </div>
 
+  </div><!-- end mainTrackerWrap -->
+
 </div>
 
 <script>
@@ -906,7 +1234,7 @@
     99: { label: 'THUNDERSTORM+HAIL',  icon: '▲' },
   };
 
-  function fetchWeather(lat, lon) {
+  function fetchWeather(lat, lon, targetIds) {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&temperature_unit=celsius&timezone=auto`;
     fetch(url)
       .then(r => r.json())
@@ -915,23 +1243,22 @@
         const code  = current.weathercode ?? -1;
         const tempC = current.temperature_2m;
         const tempF = tempC !== undefined ? (tempC * 9/5 + 32).toFixed(1) : null;
-
         const wmo = wmoMap[code] || { label: 'UNKNOWN CONDITIONS', icon: '◈' };
 
-        document.getElementById('weatherIcon').textContent = wmo.icon;
+        if (targetIds.iconId) document.getElementById(targetIds.iconId).textContent = wmo.icon;
 
-        const wEl = document.getElementById('valWeather');
-        wEl.className = 'detail-value';
+        const wEl = document.getElementById(targetIds.weatherId);
+        wEl.className = targetIds.valueClass || 'detail-value';
         typeText(wEl, wmo.label, 30, () => {
           if (tempC !== undefined) {
-            const tEl = document.getElementById('valTemp');
+            const tEl = document.getElementById(targetIds.tempId);
             typeText(tEl, `${tempC.toFixed(1)}°C  /  ${tempF}°F`, 28);
           }
         });
       })
       .catch(() => {
-        const wEl = document.getElementById('valWeather');
-        wEl.className = 'detail-value pending';
+        const wEl = document.getElementById(targetIds.weatherId);
+        wEl.className = (targetIds.valueClass || 'detail-value') + ' pending';
         wEl.textContent = '[ WEATHER FEED UNAVAILABLE ]';
       });
   }
@@ -993,7 +1320,12 @@
     coordEl.className = 'detail-value';
     typeText(coordEl, lat.toFixed(5) + ', ' + lon.toFixed(5), 28);
 
-    fetchWeather(lat, lon);
+    fetchWeather(lat, lon, {
+      iconId: 'weatherIcon',
+      weatherId: 'valWeather',
+      tempId: 'valTemp',
+      valueClass: 'detail-value'
+    });
 
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
 
@@ -1153,36 +1485,112 @@
     });
   }
 
-  // ── AUTO-LOAD SHARED COORDINATES FROM URL ──
+  // ── CHECK URL PARAMS ON LOAD ──
   window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const lat = parseFloat(params.get('lat'));
     const lon = parseFloat(params.get('lon'));
     if (!isNaN(lat) && !isNaN(lon)) {
-      loadSharedLocation(lat, lon);
+      // Show read-only shared view, hide main tracker
+      document.getElementById('sharedView').style.display = 'block';
+      document.getElementById('mainTrackerWrap').style.display = 'none';
+      document.getElementById('statusText').textContent = 'INCOMING INTEL';
+      document.getElementById('statusDot').classList.add('red');
+      loadSharedView(lat, lon);
     }
   });
 
-  function loadSharedLocation(lat, lon) {
-    const btn = document.getElementById('scanBtn');
-    btn.disabled = true;
-    btn.classList.add('btn-flicker');
-    document.getElementById('statusDot').classList.add('red');
-    document.getElementById('statusText').textContent = 'ACQUIRING';
-    document.getElementById('cardMeta').textContent = 'LOADING SHARED COORDINATES...';
-    const lb = document.getElementById('loadingBar');
-    lb.classList.add('active');
-    lb.innerHTML = '<div class="loading-bar-inner"></div>';
-    document.getElementById('trackerCard').classList.add('alert-flash');
-    setTimeout(() => document.getElementById('trackerCard').classList.remove('alert-flash'), 1200);
-    document.getElementById('radarTarget').style.display = 'block';
-    ['valCountry','valProvince','valDistrict','valLocality','valZip','valWeather','valCoords'].forEach(id => {
-      const el = document.getElementById(id);
-      el.className = 'detail-value pending';
-      el.textContent = '[ SCANNING... ]';
+  // ── READ-ONLY SHARED VIEW LOADER ──
+  function loadSharedView(lat, lon) {
+    const latStr = (lat >= 0 ? lat.toFixed(4)+'°N' : Math.abs(lat).toFixed(4)+'°S');
+    const lonStr = (lon >= 0 ? lon.toFixed(4)+'°E' : Math.abs(lon).toFixed(4)+'°W');
+
+    // Coords immediately
+    const coordEl = document.getElementById('sv-coords');
+    coordEl.className = 'shared-value';
+    typeText(coordEl, lat.toFixed(5) + ', ' + lon.toFixed(5), 28);
+
+    // Weather
+    fetchWeather(lat, lon, {
+      weatherId: 'sv-weather',
+      tempId: 'sv-temp',
+      valueClass: 'shared-value'
     });
-    document.getElementById('valTemp').textContent = '';
-    onGeoSuccess({ coords: { latitude: lat, longitude: lon } });
+
+    // Reverse geocode
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
+    fetch(url, { headers: { 'Accept-Language': 'en' } })
+      .then(r => r.json())
+      .then(data => populateSharedDetails(data, lat, lon))
+      .catch(() => populateSharedFallback(lat, lon));
+  }
+
+  function populateSharedDetails(data, lat, lon) {
+    const addr = data.address || {};
+    const country  = (addr.country || 'UNKNOWN').toUpperCase();
+    const province = (addr.state || addr.region || addr.county || 'UNKNOWN').toUpperCase();
+    const district = (addr.county || addr.state_district || addr.city || addr.town || addr.village || 'UNKNOWN').toUpperCase();
+    const zip      = addr.postcode || 'N/A';
+    const locality = (
+      addr.suburb || addr.neighbourhood || addr.quarter || addr.hamlet ||
+      addr.locality || addr.village || addr.town || addr.city_district ||
+      addr.residential || addr.road || 'UNRESOLVED'
+    ).toUpperCase();
+
+    const fields = [
+      { id: 'sv-country',  val: country },
+      { id: 'sv-province', val: province },
+      { id: 'sv-district', val: district },
+      { id: 'sv-locality', val: locality },
+      { id: 'sv-zip',      val: zip },
+    ];
+
+    let delay = 0;
+    fields.forEach(f => {
+      setTimeout(() => {
+        const el = document.getElementById(f.id);
+        el.className = 'shared-value';
+        typeText(el, f.val, 35);
+      }, delay);
+      delay += 350;
+    });
+
+    setTimeout(() => finalizeSharedView(lat, lon), delay + 200);
+  }
+
+  function populateSharedFallback(lat, lon) {
+    ['sv-country','sv-province','sv-district','sv-locality','sv-zip'].forEach((id, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        el.className = 'shared-value';
+        typeText(el, i === 4 ? 'N/A' : 'UNABLE TO RESOLVE', 30);
+      }, i * 300);
+    });
+    setTimeout(() => finalizeSharedView(lat, lon), 1700);
+  }
+
+  function finalizeSharedView(lat, lon) {
+    document.getElementById('statusDot').classList.remove('red');
+    document.getElementById('statusText').textContent = 'INTEL RECEIVED';
+    document.getElementById('sharedLoadingBar').style.display = 'none';
+
+    // Show map
+    document.getElementById('sharedMapPlaceholder').style.display = 'none';
+    const frame = document.getElementById('sharedMapFrame');
+    frame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.05},${lat-0.05},${lon+0.05},${lat+0.05}&layer=mapnik&marker=${lat},${lon}`;
+    frame.style.display = 'block';
+
+    const scanLine = document.getElementById('sharedMapScan');
+    scanLine.classList.add('active');
+    document.getElementById('sharedMapTarget').classList.add('visible');
+    setTimeout(() => scanLine.classList.remove('active'), 5000);
+
+    // Open in maps link
+    const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}&z=15`;
+    const openBtn = document.getElementById('sharedOpenMaps');
+    openBtn.href = mapsUrl;
+    openBtn.style.pointerEvents = 'auto';
+    openBtn.style.opacity = '1';
   }
 </script>
 </body>
